@@ -17,15 +17,19 @@ jobs:
 
       - name: Build Unsigned App
         run: |
-          PROJECT_FILE=$(find source_code -maxdepth 4 -name "*.xcworkspace" | head -n 1)
+          PROJECT_FILE=$(find source_code -name "*.xcworkspace" ! -path "*project.xcworkspace*" | head -n 1)
           if [ -z "$PROJECT_FILE" ]; then
-            PROJECT_FILE=$(find source_code -maxdepth 4 -name "*.xcodeproj" | head -n 1)
+            PROJECT_FILE=$(find source_code -name "*.xcodeproj" | head -n 1)
             BUILD_FLAG="-project"
           else
             BUILD_FLAG="-workspace"
           fi
 
-          SCHEME_NAME=$(basename "$PROJECT_FILE" | sed 's/\.[^.]*$//')
+          echo "Found project: $PROJECT_FILE"
+
+          SCHEME_NAME=$(xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; print(json.load(sys.stdin)['project']['schemes'][0])" 2>/dev/null || xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; print(json.load(sys.stdin)['workspace']['schemes'][0])")
+
+          echo "Using scheme: $SCHEME_NAME"
 
           xcodebuild $BUILD_FLAG "$PROJECT_FILE" \
             -scheme "$SCHEME_NAME" \
