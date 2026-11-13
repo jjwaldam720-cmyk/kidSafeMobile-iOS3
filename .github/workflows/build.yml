@@ -38,8 +38,9 @@ jobs:
           fi
 
           echo "Found project: $PROJECT_FILE"
+          BASE_NAME=$(basename "$PROJECT_FILE" | sed 's/\.[^.]*$//')
 
-          SCHEME_NAME=$(xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; data = json.load(sys.stdin); print(next(iter((data.get('workspace') or data.get('project')).get('schemes'))))")
+          SCHEME_NAME=$(xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; data = json.load(sys.stdin); schemes = (data.get('workspace') or data.get('project')).get('schemes', []); print(next((s for s in schemes if s == '$BASE_NAME' or s in ['Median', 'GoNativeIOS']), next((s for s in schemes if 'Generate' not in s and 'Pods' not in s), schemes[0])))")
 
           echo "Using scheme: $SCHEME_NAME"
 
