@@ -15,6 +15,15 @@ jobs:
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           unzip -q "$ZIP_FILE" -d source_code
 
+      - name: Install CocoaPods (if needed)
+        run: |
+          PODFILE=$(find source_code -name "Podfile" | head -n 1)
+          if [ -n "$PODFILE" ]; then
+            POD_DIR=$(dirname "$PODFILE")
+            echo "Running pod install in $POD_DIR"
+            cd "$POD_DIR" && pod install
+          fi
+
       - name: Build Unsigned App
         run: |
           PROJECT_FILE=$(find source_code -name "*.xcworkspace" ! -path "*project.xcworkspace*" | head -n 1)
@@ -27,7 +36,7 @@ jobs:
 
           echo "Found project: $PROJECT_FILE"
 
-          SCHEME_NAME=$(xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; print(json.load(sys.stdin)['project']['schemes'][0])" 2>/dev/null || xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; print(json.load(sys.stdin)['workspace']['schemes'][0])")
+          SCHEME_NAME=$(xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; data = json.load(sys.stdin); print((data.get('workspace') or data.get('project'))['schemes'][0])")
 
           echo "Using scheme: $SCHEME_NAME"
 
