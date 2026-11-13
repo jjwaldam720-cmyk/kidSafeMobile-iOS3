@@ -15,6 +15,8 @@ jobs:
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           echo "Found zip: $ZIP_FILE"
           unzip -q "$ZIP_FILE" -d source_code
+          find source_code -name "._*" -delete
+          rm -rf source_code/__MACOSX
 
       - name: Install CocoaPods (if needed)
         run: |
@@ -27,9 +29,9 @@ jobs:
 
       - name: Build Unsigned App
         run: |
-          PROJECT_FILE=$(find source_code -name "*.xcworkspace" ! -path "*project.xcworkspace*" | head -n 1)
+          PROJECT_FILE=$(find source_code -name "*.xcworkspace" ! -path "*project.xcworkspace*" ! -name "._*" | head -n 1)
           if [ -z "$PROJECT_FILE" ]; then
-            PROJECT_FILE=$(find source_code -name "*.xcodeproj" | head -n 1)
+            PROJECT_FILE=$(find source_code -name "*.xcodeproj" ! -name "._*" | head -n 1)
             BUILD_FLAG="-project"
           else
             BUILD_FLAG="-workspace"
@@ -54,10 +56,10 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/Build/Products/Release-iphoneos/*.app Payload/
-          zip -r MedianApp-unsigned.ipa Payload
+          zip -r LauncherForKids-unsigned.ipa Payload
 
       - name: Upload IPA
         uses: actions/upload-artifact@v5
         with:
           name: Unsigned-IPA
-          path: MedianApp-unsigned.ipa
+          path: LauncherForKids-unsigned.ipa
