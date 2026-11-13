@@ -1,0 +1,49 @@
+name: Build Unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Unzip Source Code
+        run: |
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          unzip -q "$ZIP_FILE" -d source_code
+
+      - name: Build Unsigned App
+        run: |
+          PROJECT_FILE=$(find source_code -maxdepth 4 -name "*.xcworkspace" | head -n 1)
+          if [ -z "$PROJECT_FILE" ]; then
+            PROJECT_FILE=$(find source_code -maxdepth 4 -name "*.xcodeproj" | head -n 1)
+            BUILD_FLAG="-project"
+          else
+            BUILD_FLAG="-workspace"
+          fi
+
+          SCHEME_NAME=$(basename "$PROJECT_FILE" | sed 's/\.[^.]*$//')
+
+          xcodebuild $BUILD_FLAG "$PROJECT_FILE" \
+            -scheme "$SCHEME_NAME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package into IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/*.app Payload/
+          zip -r MedianApp-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unsigned-IPA
+          path: MedianApp-unsigned.ipa
