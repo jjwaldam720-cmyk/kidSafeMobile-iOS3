@@ -8,11 +8,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Unzip Source Code
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          echo "Found zip: $ZIP_FILE"
           unzip -q "$ZIP_FILE" -d source_code
 
       - name: Install CocoaPods (if needed)
@@ -36,7 +37,7 @@ jobs:
 
           echo "Found project: $PROJECT_FILE"
 
-          SCHEME_NAME=$(xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; data = json.load(sys.stdin); print((data.get('workspace') or data.get('project'))['schemes'][0])")
+          SCHEME_NAME=$(xcodebuild $BUILD_FLAG "$PROJECT_FILE" -list -json | python3 -c "import sys, json; data = json.load(sys.stdin); print(next(iter((data.get('workspace') or data.get('project')).get('schemes'))))")
 
           echo "Using scheme: $SCHEME_NAME"
 
@@ -56,7 +57,7 @@ jobs:
           zip -r MedianApp-unsigned.ipa Payload
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Unsigned-IPA
           path: MedianApp-unsigned.ipa
